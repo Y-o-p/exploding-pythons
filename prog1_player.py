@@ -1,4 +1,8 @@
-from card import Card
+# Author: Jesse Rheal
+# Programming Assignment Exploding Kittens
+# Purpose: Separates player input from game logic
+
+from prog1_card import Card
 
 class Player:
     def __init__(self, name):

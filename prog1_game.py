@@ -1,6 +1,10 @@
-from player import Player
-from card import Card
-from deck import Deck
+# Author: Jesse Rheal
+# Programming Assignment Exploding Kittens
+# Purpose: Houses the game logic for Exploding Kittens
+
+from prog1_player import Player
+from prog1_card import Card
+from prog1_deck import Deck
 from random import randint
 
 class Game:
@@ -27,25 +31,30 @@ class Game:
         self._deck.shuffle()
 
     def _rotate(self, s, i):
+        # Returns an index to rotate around players
         return (s + i) % len(self._players)
 
     def _query_nopes(self, start) -> bool:
-        nope_counter = 0
-        final_player = self._rotate(start, -1)
         # Go around each player asking if they want to play a nope
         # For example: if Player 2 plays a nope, Player 1 becomes the new final player
         #              because Player 2 is the new start player. Player 2 essentially
         #              starts a new query.
+        nope_counter = 0
+        final_player = self._rotate(start, -1)
         while start != final_player:
             start = self._rotate(start, 1)
-            nope = self._players[start].query_nope()
+            player = self._players[start]
+            nope = player.query_nope()
             if nope:
+                player.hand.remove(Card.NOPE)
+                print(f"{player.name} played {Card.NOPE.name}")
                 nope_counter += 1
                 final_player = self._rotate(start, -1)
 
         return nope_counter % 2 == 1
 
     def _draw_card(self, player: Player):
+        # Gives a card to a player and handles exploding kitten/ defuse card logic
         card = self._deck.deal_card()
         if card != Card.EXPLODING_KITTEN:
             player.add_card(card)
@@ -62,6 +71,7 @@ class Game:
                 self._activate_card(player, Card.EXPLODING_KITTEN)
     
     def _activate_card(self, owner: Player, card: Card):
+        # Implements all card logic besides nope card
         skip_turn = False
         attack = False
 
@@ -71,17 +81,9 @@ class Game:
             index = owner.choose_card_placement(self._deck.get_size())
             self._deck.add_card(Card.EXPLODING_KITTEN, index)
         elif card == Card.ATTACK:
-            if self._extra_turns == 0:
-                self._extra_turns += 1
-            else:
-                self._extra_turns += 2
+            self._extra_turns += 1 if self._extra_turns == 0 else 2
             skip_turn = True
             attack = True
-        elif card == Card.FAVOR:
-            philanthropist = owner.target_player([player for player in self._players if player is not owner])
-            donation = philanthropist.choose_card()
-            owner.add_card(donation)
-            philanthropist.remove_card(donation)
         elif card == Card.SHUFFLE:
             self._deck.shuffle()
         elif card == Card.SKIP:
@@ -92,20 +94,24 @@ class Game:
             # See Game._query_nopes() and Player.query_nope()
             pass
         else:
-            # Cat card
+            # Cat card or favor card
             philanthropist = owner.target_player([player for player in self._players if player is not owner])
-            donation = philanthropist.hand[randint(0, len(philanthropist.hand) - 1)]
+            donation = philanthropist.choose_card() if card == Card.FAVOR else philanthropist.hand[randint(0, len(philanthropist.hand) - 1)]
             owner.add_card(donation)
             philanthropist.remove_card(donation)
 
         return (skip_turn, attack)
 
     def _take_player_turn(self, player: Player) -> bool:
+        # Queries player input and acts on the input
+
         skip_turn = False
         attack = False
         while True:
+            # If the player doesn't want to play a card then break
             if not player.query_card():
                 break
+            # Get a playable card
             card = None
             while card is None:
                 chosen_card = player.choose_card()
@@ -113,11 +119,12 @@ class Game:
                     card = chosen_card
                 else:
                     print("Not a playable card.. please try again")
-            print(f"{player.name} played {card.name}")
             player.hand.remove(card)
+            print(f"{player.name} played {card.name}")
+            # If it's a cat card then remove the other twin
             if card.value > 7:
-                # If it's a cat card then remove the other twin
                 player.remove_card(card)
+            # See if anyone wants to nope the card
             noped = self._query_nopes(self._players.index(player))
             if not noped:
                 (skip_turn, attack) = self._activate_card(player, card)
@@ -129,6 +136,7 @@ class Game:
         return attack
 
     def loop(self):
+        # Main game loop
         get_alive_players = lambda : [player for player in self._players if not player.dead]
         p_index = 0
         while len(get_alive_players()) > 1:

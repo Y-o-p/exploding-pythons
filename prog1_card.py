@@ -1,3 +1,7 @@
+# Author: Jesse Rheal
+# Programming Assignment Exploding Kittens
+# Purpose: Enum class makes cards simple primitives
+
 from enum import Enum
 
 class Card(Enum):
