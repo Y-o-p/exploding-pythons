@@ -36,7 +36,5 @@ class Deck:
 
     def get_top_cards(self, count=1):
         if len(self._deck) > count:
-            return self._deck[-count - 1:-1]
+            return self._deck[-count:]
         return self._deck
-
-    

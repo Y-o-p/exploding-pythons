@@ -4,12 +4,13 @@ class Player:
     def __init__(self, name):
         self.name = name
         self.hand = []
+        self.dead = False
 
     def query_card(self) -> bool:
-        if len(self.hand) == 0:
+        if len([card for card in self.hand if self.is_playable_card(card)]) == 0:
             return False
         
-        print("-----Would you like to play a card?-----")
+        print(f"-----{self.name}: would you like to play a card? (y/n)-----")
         return self._get_yes_or_no()
 
     def print_hand(self):
@@ -17,7 +18,7 @@ class Player:
             print(f"{i + 1}: {card.name}")
 
     def choose_card(self) -> Card:
-        print("-----Pick a card-----")
+        print(f"-----{self.name}: pick a card-----")
         self.print_hand()
         
         return self.hand[self._get_num_input(1, len(self.hand)) - 1]
@@ -33,18 +34,18 @@ class Player:
         if Card.NOPE not in self.hand:
             return False
 
-        print("-----Would you like to play a nope card? (y/n)-----")
+        print(f"-----{self.name}: would you like to play a nope card? (y/n)-----")
         return self._get_yes_or_no()
 
     def target_player(self, targets):
-        print("-----Target a player-----")
+        print(f"-----{self.name}: target a player-----")
         for i, player in enumerate(targets):
             print(f"{i + 1}: {player.name}")
         
         return targets[self._get_num_input(1, len(targets)) - 1]
 
     def choose_card_placement(self, deck_size) -> int:
-        print(f"-----Choose a spot in the deck-----")
+        print(f"-----{self.name}: choose a spot in the deck-----")
         print(f"0: Bottom of deck")
         print(f"{deck_size}: Top of deck")
 
@@ -53,6 +54,14 @@ class Player:
     def see_cards(self, cards):
         for i, card in enumerate(cards):
             print(f"{i}: {card.name}" + (" (Top of deck)" if i == len(cards)-1 else ""))
+
+    def add_card(self, card: Card):
+        self.hand.append(card)
+        print(f"{self.name}: you drew a {card.name} card")
+
+    def remove_card(self, card: Card):
+        self.hand.remove(card)
+        print(f"{self.name}: a {card.name} card was removed from your hand")
 
     def _get_num_input(self, min: int, max: int) -> int:
         while True:
