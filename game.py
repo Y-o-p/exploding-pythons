@@ -9,7 +9,8 @@ class Game:
 
         self._deck = Deck()
         self._current_player = 0
-        self._turn_counter = 1
+        self._turn_counter = 0
+        self._previous_card = None
 
         self._deck.create_deck(len(self._players))
         self._deck.shuffle()
@@ -64,7 +65,7 @@ class Game:
             index = owner.choose_card_placement(self._deck.get_size())
             self._deck.add_card(Card.EXPLODING_KITTEN, index)
         elif card == Card.ATTACK:
-            self._turn_counter += 2
+            self._turn_counter += 3
             skip_turn = True
         elif card == Card.FAVOR:
             philanthropist = owner.target_player([player for player in self._players if player is not owner])
@@ -88,7 +89,7 @@ class Game:
 
         return skip_turn
 
-    def _take_player_turn(self, player: Player):
+    def _take_player_turn(self, player: Player) -> bool:
         skip_turn = False
         while True:
             if not player.query_card():
@@ -112,15 +113,17 @@ class Game:
         
         if not skip_turn:
             self._draw_card(player)
+        return skip_turn
 
     def loop(self):
         while len(self._players) > 1:
             for player in self._players:
-                for i in range(0, self._turn_counter):
+                while True:
                     print(f"##########################")
                     print(f"It is {player.name}'s turn")
                     print(f"##########################")
                     player.print_hand()
                     self._take_player_turn(player)
-                if self._turn_counter == 0:
-                    self._turn_counter += 1
+                    if self._turn_counter == 0:
+                        break
+                    self._turn_counter -= 1
