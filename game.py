@@ -1,4 +1,4 @@
-from player import Player, AI
+from player import Player
 from card import Card
 from deck import Deck
 from random import randint
@@ -9,7 +9,7 @@ class Game:
 
         self._deck = Deck()
         self._current_player = 0
-        self._turn_counter = 0
+        self._extra_turns = 0
         self._previous_card = None
 
         self._deck.create_deck(len(self._players))
@@ -56,8 +56,9 @@ class Game:
                 print(f"{player.name} drew an exploding kitten and is out of the game!")
                 self._activate_card(player, Card.EXPLODING_KITTEN)
     
-    def _activate_card(self, owner: Player, card: Card) -> bool:
+    def _activate_card(self, owner: Player, card: Card):
         skip_turn = False
+        attack = False
 
         if card == Card.EXPLODING_KITTEN:
             self._players.remove(owner)
@@ -65,8 +66,12 @@ class Game:
             index = owner.choose_card_placement(self._deck.get_size())
             self._deck.add_card(Card.EXPLODING_KITTEN, index)
         elif card == Card.ATTACK:
-            self._turn_counter += 3
+            if self._extra_turns == 0:
+                self._extra_turns += 1
+            else:
+                self._extra_turns += 2
             skip_turn = True
+            attack = True
         elif card == Card.FAVOR:
             philanthropist = owner.target_player([player for player in self._players if player is not owner])
             donation = philanthropist.choose_card()
@@ -87,10 +92,11 @@ class Game:
             owner.hand.append(donation)
             philanthropist.hand.remove(donation)
 
-        return skip_turn
+        return (skip_turn, attack)
 
     def _take_player_turn(self, player: Player) -> bool:
         skip_turn = False
+        attack = False
         while True:
             if not player.query_card():
                 break
@@ -107,13 +113,13 @@ class Game:
                 player.hand.remove(card)
             noped = self._query_nopes(self._players.index(player))
             if not noped:
-                skip_turn = self._activate_card(player, card)
+                (skip_turn, attack) = self._activate_card(player, card)
                 if skip_turn:
                     break
         
         if not skip_turn:
             self._draw_card(player)
-        return skip_turn
+        return attack
 
     def loop(self):
         while len(self._players) > 1:
@@ -122,8 +128,9 @@ class Game:
                     print(f"##########################")
                     print(f"It is {player.name}'s turn")
                     print(f"##########################")
+                    print(f"Extra turns to take: {self._extra_turns}")
                     player.print_hand()
-                    self._take_player_turn(player)
-                    if self._turn_counter == 0:
+                    attack = self._take_player_turn(player)
+                    if self._extra_turns == 0 or attack:
                         break
-                    self._turn_counter -= 1
+                    self._extra_turns -= 1
